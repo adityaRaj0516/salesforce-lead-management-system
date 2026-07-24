@@ -1,5 +1,9 @@
 public with sharing class LeadValidator {
-    public LeadValidator() {
+
+    public static void validate(List<Lead> leads) {
+
+        // Validation logic will be added later.
 
     }
+
 }
