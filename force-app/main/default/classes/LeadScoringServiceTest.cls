@@ -12,7 +12,7 @@ private class LeadScoringServiceTest {
                 Company = 'Company' + i,
                 Industry = 'Technology',
                 AnnualRevenue = 60000000,
-                NumberOfEmployees = 150,
+                NumberOfEmployees = 650,
                 Website = 'https://example.com',
                 Email = 'contact' + i + '@company.com',
                 LeadSource = 'Referral',

@@ -5,7 +5,7 @@
  * are defined once as constants so scoring-model changes (new fields on
  * Lead_Score__c-related logic) only need to be updated in one place.
  *
- * WITH SECURITY_ENFORCED is applied to every query so field-level security
+ * WITH USER_MODE is applied to every query so field-level security
  * is respected regardless of caller profile. Record-level sharing is
  * handled by the `with sharing` class declaration.
  */
@@ -34,7 +34,7 @@ public with sharing class LeadRepository {
         }
 
         String query = 'SELECT ' + CORE_FIELDS + ', ' + SCORING_FIELDS +
-            ' FROM Lead WHERE Id = :leadId WITH SECURITY_ENFORCED LIMIT 1';
+            ' FROM Lead WHERE Id = :leadId WITH USER_MODE LIMIT 1';
 
         List<Lead> leads = Database.query(query);
         return leads.isEmpty() ? null : leads[0];
@@ -51,7 +51,7 @@ public with sharing class LeadRepository {
 
         String query = 'SELECT ' + SUMMARY_FIELDS + ', Conversion_Probability__c' +
             ' FROM Lead WHERE Priority_Zone__c = \'Hot\'' +
-            ' WITH SECURITY_ENFORCED' +
+            ' WITH USER_MODE' +
             ' ORDER BY Lead_Score__c DESC' +
             ' LIMIT :safeLimit';
 
@@ -73,7 +73,7 @@ public with sharing class LeadRepository {
 
         String query = 'SELECT ' + SUMMARY_FIELDS + ', Phone' +
             ' FROM Lead WHERE Industry = :industry' +
-            ' WITH SECURITY_ENFORCED' +
+            ' WITH USER_MODE' +
             ' ORDER BY Lead_Score__c DESC' +
             ' LIMIT :safeLimit';
 
@@ -91,7 +91,7 @@ public with sharing class LeadRepository {
 
         String query = 'SELECT ' + SUMMARY_FIELDS + ', AnnualRevenue' +
             ' FROM Lead WHERE AnnualRevenue >= :minRevenue' +
-            ' WITH SECURITY_ENFORCED' +
+            ' WITH USER_MODE' +
             ' ORDER BY AnnualRevenue DESC' +
             ' LIMIT :safeLimit';
 
@@ -113,7 +113,7 @@ public with sharing class LeadRepository {
             ' WHERE Company LIKE :searchTerm' +
             ' OR FirstName LIKE :searchTerm' +
             ' OR LastName LIKE :searchTerm' +
-            ' WITH SECURITY_ENFORCED' +
+            ' WITH USER_MODE' +
             ' ORDER BY Lead_Score__c DESC' +
             ' LIMIT 50';
 
