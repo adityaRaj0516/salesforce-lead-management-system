@@ -37,7 +37,7 @@ private class LeadScoringServiceTest {
         for (Lead l : scored) {
             System.assertEquals(100, l.Lead_Score__c, 'Max-weight lead should cap at 100');
             System.assertEquals('Hot', l.Priority_Zone__c);
-            System.assertEquals('Rule', l.Score_Source__c);
+            System.assertEquals('Einstein', l.Score_Source__c);
             System.assertEquals('Fresh', l.Score_Status__c);
             System.assertEquals(20, l.Industry_Score__c);
             System.assert(l.Conversion_Probability__c > 0);

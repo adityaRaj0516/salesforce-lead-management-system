@@ -28,7 +28,16 @@ private class EinsteinPredictionServiceTest {
         );
         insert l;
 
-        Lead scored = [SELECT Lead_Score__c FROM Lead WHERE Id = :l.Id];
+        Lead scored = [
+            SELECT Id,
+                Company,
+                Industry,
+                AnnualRevenue,
+                NumberOfEmployees,
+                Lead_Score__c
+            FROM Lead
+            WHERE Id = :l.Id
+        ];
 
         Test.startTest();
         EinsteinPredictionService.PredictionResult result = EinsteinPredictionService.predict(scored);
