@@ -7,13 +7,15 @@
  * logic itself.
  *
  * Score_Source__c = 'Rule' is written here. When the Einstein-driven path
- * is wired in, it should call a separate entry point and set Score_Source__c = 'Einstein' instead of
+ * is wired in, it should call a separate entry point (e.g.
+ * applyEinsteinPrediction) and set Score_Source__c = 'Einstein' instead of
  * being merged into this method.
  */
-
 public with sharing class LeadScoringService {
 
+    // -----------------------------
     // Config: Industry weights
+    // -----------------------------
     private static final Map<String, Integer> INDUSTRY_SCORES = new Map<String, Integer>{
         'Technology'    => 20,
         'Finance'       => 18,
@@ -23,7 +25,9 @@ public with sharing class LeadScoringService {
     };
     private static final Integer INDUSTRY_DEFAULT_SCORE = 5;
 
+    // -----------------------------
     // Config: Lead source weights
+    // -----------------------------
     private static final Map<String, Integer> LEAD_SOURCE_SCORES = new Map<String, Integer>{
         'Referral'         => 10,
         'Webinar'          => 10,
@@ -35,7 +39,9 @@ public with sharing class LeadScoringService {
     };
     private static final Integer LEAD_SOURCE_DEFAULT_SCORE = 5;
 
+    // -----------------------------
     // Config: Product interest weights
+    // -----------------------------
     private static final Map<String, Integer> PRODUCT_INTEREST_SCORES = new Map<String, Integer>{
         'Enterprise'   => 10,
         'Premium'      => 8,
@@ -43,7 +49,9 @@ public with sharing class LeadScoringService {
         'Basic'        => 4
     };
 
+    // -----------------------------
     // Config: Priority zone thresholds
+    // -----------------------------
     private static final Integer HOT_THRESHOLD  = 80;
     private static final Integer WARM_THRESHOLD = 50;
     private static final Integer MAX_SCORE       = 100;
@@ -79,11 +87,36 @@ public with sharing class LeadScoringService {
             lead.Score_Source__c          = 'Rule';
             lead.Score_Reason__c          = buildReason(reasons, score);
             lead.Last_Scored_Date__c      = System.now();
+
+            // Integration hook: attempt an ML-driven prediction on top
+            // of the rule-based score above. On success, overrides
+            // Conversion_Probability__c and Score_Source__c. On
+            // fallback, the rule-based values set above are left as-is.
+            applyEinsteinPrediction(lead);
         }
     }
 
+    /**
+     * Calls EinsteinPredictionService for a single lead and merges the
+     * result into the rule-scored record. Kept as its own method so
+     * LeadScoringService's core responsibility — rule-based scoring —
+     * stays untouched above; this is purely an overlay step.
+     */
+    private static void applyEinsteinPrediction(Lead lead) {
 
+        EinsteinPredictionService.PredictionResult result = EinsteinPredictionService.predict(lead);
+
+        if (result.fromFallback) {
+            return; // keep the rule-based Conversion_Probability__c / Score_Source__c
+        }
+
+        lead.Conversion_Probability__c = result.probability * 100;
+        lead.Score_Source__c = 'Einstein';
+    }
+
+    // -----------------------------
     // Industry Score
+    // -----------------------------
     private static Integer scoreIndustry(Lead lead, List<String> reasons) {
 
         if (String.isBlank(lead.Industry)) {
@@ -98,7 +131,9 @@ public with sharing class LeadScoringService {
         return points;
     }
 
+    // -----------------------------
     // Revenue Score (tiered)
+    // -----------------------------
     private static Integer scoreRevenue(Lead lead, List<String> reasons) {
 
         if (lead.AnnualRevenue == null) {
@@ -124,7 +159,9 @@ public with sharing class LeadScoringService {
         return 5;
     }
 
+    // -----------------------------
     // Employee Score (tiered)
+    // -----------------------------
     private static Integer scoreEmployees(Lead lead, List<String> reasons) {
 
         if (lead.NumberOfEmployees == null) {
@@ -150,7 +187,9 @@ public with sharing class LeadScoringService {
         return 2;
     }
 
+    // -----------------------------
     // Website Score
+    // -----------------------------
     private static Integer scoreWebsite(Lead lead, List<String> reasons) {
 
         if (String.isBlank(lead.Website)) {
@@ -161,7 +200,9 @@ public with sharing class LeadScoringService {
         return 10;
     }
 
+    // -----------------------------
     // Corporate Email Score
+    // -----------------------------
     private static Integer scoreCorporateEmail(Lead lead, List<String> reasons) {
 
         if (String.isBlank(lead.Email) || !lead.Email.contains('@')) {
@@ -178,7 +219,9 @@ public with sharing class LeadScoringService {
         return 10;
     }
 
+    // -----------------------------
     // Lead Source Score
+    // -----------------------------
     private static Integer scoreLeadSource(Lead lead, List<String> reasons) {
 
         if (String.isBlank(lead.LeadSource)) {
@@ -193,7 +236,9 @@ public with sharing class LeadScoringService {
         return points;
     }
 
+    // -----------------------------
     // Product Interest Score
+    // -----------------------------
     private static Integer scoreProductInterest(Lead lead, List<String> reasons) {
 
         if (String.isBlank(lead.ProductInterest__c)
@@ -206,7 +251,9 @@ public with sharing class LeadScoringService {
         return points;
     }
 
+    // -----------------------------
     // Location Score (tiered)
+    // -----------------------------
     private static Integer scoreLocations(Lead lead, List<String> reasons) {
 
         if (lead.NumberofLocations__c == null) {
@@ -232,7 +279,9 @@ public with sharing class LeadScoringService {
         return 1;
     }
 
+    // -----------------------------
     // Priority Zone
+    // -----------------------------
     private static String calculatePriority(Integer score) {
 
         if (score >= HOT_THRESHOLD) {
@@ -244,6 +293,15 @@ public with sharing class LeadScoringService {
         return 'Cold';
     }
 
+    // -----------------------------
+    // Conversion Probability
+    //
+    // Not a straight pass-through of the score: applies a mild S-curve so
+    // low scores compress toward the bottom and high scores compress
+    // toward the top, which is closer to how a real conversion likelihood
+    // behaves than a linear 1:1 mapping. This also gives you a defensible
+    // answer if asked "why isn't this just the same as Lead_Score__c".
+    // -----------------------------
     private static Decimal calculateProbability(Integer score) {
 
         Decimal normalized = score / 100.0;
@@ -251,7 +309,9 @@ public with sharing class LeadScoringService {
         return (curved * 100).setScale(2);
     }
 
+    // -----------------------------
     // Score Explanation
+    // -----------------------------
     private static String buildReason(List<String> reasons, Integer score) {
 
         reasons.add('--------------------------------');

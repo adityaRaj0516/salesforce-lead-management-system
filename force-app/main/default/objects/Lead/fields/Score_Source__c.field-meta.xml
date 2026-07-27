@@ -24,6 +24,11 @@
                 <default>false</default>
                 <label>Manual</label>
             </value>
+            <value>
+                <fullName>Einstein</fullName>
+                <default>false</default>
+                <label>Einstein</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
