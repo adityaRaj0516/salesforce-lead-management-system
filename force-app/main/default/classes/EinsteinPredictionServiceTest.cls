@@ -28,12 +28,24 @@ private class EinsteinPredictionServiceTest {
         );
         insert l;
 
+        // NOTE: buildRequestPayload() reads Industry, AnnualRevenue,
+        // NumberOfEmployees, LeadSource, Website, ProductInterest__c,
+        // NumberofLocations__c, and Lead_Score__c off the Lead. Every
+        // one of those fields must be in this SELECT list, or Salesforce
+        // throws "SObject row was retrieved via SOQL without querying
+        // the requested field" the moment predict() touches a field
+        // that wasn't queried — even though the field exists and is
+        // simply null/unset on this record.
         Lead scored = [
             SELECT Id,
                 Company,
                 Industry,
                 AnnualRevenue,
                 NumberOfEmployees,
+                LeadSource,
+                Website,
+                ProductInterest__c,
+                NumberofLocations__c,
                 Lead_Score__c
             FROM Lead
             WHERE Id = :l.Id
